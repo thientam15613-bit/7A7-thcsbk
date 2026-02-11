@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lớp 7A7</title>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-check-compat.js"></script>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Manrope', sans-serif; overflow-x: hidden; background: #050f0a; color: white; min-height: 100vh; }
+    .hero-section { position: relative; width: 100%; min-height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; background: linear-gradient(135deg, #050f0a 0%, #0a1e14 50%, #050f0a 100%); }
+    .orb-container { position: absolute; width: 100%; height: 100%; top: 0; left: 0; z-index: 1; pointer-events: none; }
+    .orb { position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.8; animation: float 20s infinite ease-in-out; }
+    .orb-1 { width: 800px; height: 550px; background: linear-gradient(225deg, rgba(7, 250, 163, 0.9) 0%, rgba(6, 244, 140, 0.79) 34%, rgba(6, 228, 115, 0.75) 40%, rgba(8, 157, 66, 0.41) 67%, rgba(4, 106, 45, 0) 100%); top: 15%; right: 10%; }
+    .orb-2 { width: 800px; height: 550px; background: linear-gradient(45deg, rgba(6, 55, 23, 0) 0%, rgba(4, 106, 15, 0.43) 40%, rgba(1, 183, 62, 0.75) 70%, rgba(0, 208, 88, 0.83) 80%, rgb(2, 220, 100) 100%); filter: blur(40px); top: -5%; left: -5%; animation-delay: -7s; }
+    @keyframes float { 0%, 100% { transform: translate(0, 0) scale(1); } 25% { transform: translate(20px, -20px) scale(1.05); } 50% { transform: translate(-20px, 20px) scale(0.95); } 75% { transform: translate(15px, 15px) scale(1.02); } }
+    .content { position: relative; z-index: 10; text-align: center; padding: 60px 40px; max-width: 1200px; animation: fadeInUp 1s ease-out; display: none; }
+    .content.show { display: block; }
+    .main-title { font-size: clamp(48px, 8vw, 90px); font-weight: 800; color: #ffffff; letter-spacing: -0.05em; line-height: 1; margin-bottom: 40px; }
+    .subtitle { font-size: clamp(14px, 2vw, 19px); font-weight: 300; color: rgba(255, 255, 255, 0.6); letter-spacing: 0.15em; line-height: 1.4; margin-bottom: 50px; text-transform: uppercase; }
+    .cta-button, .submit-answer-btn { display: inline-block; padding: 20px 55px; font-size: 20px; font-weight: 800; color: #ffffff; background: rgba(255, 255, 255, 0.1); border: none; border-radius: 12px; cursor: pointer; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); backdrop-filter: blur(10px); text-decoration: none; font-family: 'Manrope', sans-serif; }
+    .submit-answer-btn { background: linear-gradient(135deg, #07FAA3 0%, #02DC64 100%); color: #050f0a; }
+    .submit-answer-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .quiz-container { display: none; position: relative; z-index: 10; text-align: center; padding: 60px 40px; max-width: 1000px; animation: slideIn 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+    .quiz-container.show { display: block; }
+    .quiz-card { background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(20px); border-radius: 24px; padding: 50px 40px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4); }
+    .progress-bar { width: 100%; height: 6px; background: rgba(255, 255, 255, 0.1); border-radius: 10px; overflow: hidden; margin-bottom: 30px; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #07FAA3 0%, #02DC64 100%); width: 0%; transition: width 0.5s ease; }
+    .question-number { display: inline-block; background: #07FAA3; color: #050f0a; padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: 700; margin-bottom: 30px; }
+    .question-text { font-size: clamp(24px, 4vw, 36px); font-weight: 700; margin-bottom: 50px; }
+    .input-container { margin: 40px 0; }
+    .name-input { width: 100%; padding: 20px 30px; font-size: 20px; color: #ffffff; background: rgba(255, 255, 255, 0.05); border: 2px solid rgba(255, 255, 255, 0.1); border-radius: 16px; outline: none; font-family: 'Manrope', sans-serif; }
+    .name-input:focus { border-color: #07FAA3; }
+    .error-message { color: #ff4444; margin-top: 10px; display: none; font-size: 14px; }
+    .error-message.show { display: block; }
+    .hint-text { color: rgba(255, 255, 255, 0.4); font-size: 14px; margin-top: 10px; font-style: italic; display: none; }
+    .hint-text.show { display: block; }
+    .board-container { margin: 20px auto; max-width: 800px; }
+    .board-header { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 15px; color: #07FAA3; font-weight: 800; font-size: 18px; }
+    .board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .seat { background: rgba(255, 255, 255, 0.05); border: 2px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.3s ease; font-weight: 700; min-height: 60px; display: flex; align-items: center; justify-content: center; }
+    .seat:hover { background: rgba(7, 250, 163, 0.1); border-color: #07FAA3; transform: scale(1.05); }
+    .seat.selected { background: rgba(7, 250, 163, 0.2); border-color: #07FAA3; box-shadow: 0 0 20px rgba(7, 250, 163, 0.3); }
+    .seat-21 { grid-column: 3; }
+    .hidden { display: none !important; }
+    .loading-spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #07FAA3; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(-50px); } to { opacity: 1; transform: translateX(0); } }
+    
+    .waiting-screen { 
+    position: fixed;  /* ← Change from absolute to fixed */
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    text-align: center;
+    z-index: 100;  /* ← Increase z-index to be sure it's on top */
+    flex-direction: column;
+    background: #050f0a;  /* ← Add background so it covers everything */
+}
+    .waiting-screen.show { display: flex; }
+    .waiting-screen h1 { font-size: clamp(24px, 5vw, 48px); margin-bottom: 20px; }
+    .waiting-screen p { opacity: 0.6; margin-top: 10px; font-size: 18px; }
+
+    .avatar-upload-btn {
+        padding: 12px 24px;
+        background: rgba(255,255,255,0.1);
+        border: 2px solid rgba(255,255,255,0.2);
+        border-radius: 10px;
+        color: white;
+        cursor: pointer;
+        font-weight: 600;
+        font-family: 'Manrope', sans-serif;
+        margin: 10px 5px;
+    }
+    
+    .avatar-preview {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 4px solid #07FAA3;
+        object-fit: cover;
+        margin: 20px auto;
+        display: none;
+    }
+    
+    .avatar-preview.show { display: block; }
+
+    /* ADMIN STYLES - FIXED SPACING */
+    #adminWrapper {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: #050f0a;
+    }
+
+    #loginScreen {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+    }
+
+    #loginScreen .content {
+        display: block;
+        max-width: 500px;
+        width: 100%;
+    }
+
+    #adminPanel {
+        display: none;
+        padding: 40px;
+        color: white;
+        overflow-y: auto;
+        max-height: 100vh;
+    }
+
+    #adminPanel h2 {
+        margin-bottom: 20px;
+        font-size: 32px;
+    }
+
+    .submission-card {
+        border: 1px solid rgba(255,255,255,0.1);
+        padding: 20px;
+        margin: 15px 0;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.05);
+    }
+
+    .submission-card b {
+        font-size: 18px;
+        color: #07FAA3;
+    }
+
+    .submission-card button {
+        padding: 10px 20px;
+        margin: 10px 5px 0 0;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        font-family: 'Manrope', sans-serif;
+        transition: all 0.3s ease;
+    }
+
+    .submission-card button:first-of-type {
+        background: #07FAA3;
+        color: #050f0a;
+    }
+
+    .submission-card button:last-of-type {
+        background: rgba(255,68,68,0.8);
+        color: white;
+    }
+
+    .submission-card button:hover {
+        transform: scale(1.05);
+    }
+</style>
+</head>
+<body>
+<section class="hero-section">
+    <div class="orb-container">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+    </div>
+
+    <div class="content show" id="welcomeContent">
+        <h1 class="main-title">Chào mừng đã đến với<br>Lớp 7A7</h1>
+        <p class="subtitle">Để bắt đầu hãy trả lời một số câu hỏi nhé</p>
+        <button class="cta-button" id="startButton">Bắt Đầu</button>
+    </div>
+
+    <div class="quiz-container" id="quizContainer">
+        <div class="quiz-card">
+            <div class="progress-bar"><div class="progress-fill" id="progressBar"></div></div>
+            <span class="question-number" id="qNum">Câu hỏi 1/5</span>
+            <h2 class="question-text" id="qText">Nhập tên của bạn</h2>
+            <div id="inputArea">
+                <div class="input-container">
+                    <input type="text" id="answerInput" class="name-input" autocomplete="off">
+                    <div class="error-message" id="errorMsg"></div>
+                    <div class="hint-text" id="hintText"></div>
+                </div>
+            </div>
+            <div id="boardArea" class="hidden">
+                <div class="board-container">
+                    <div class="board-header"><div>Tổ 4</div><div>Tổ 3</div><div>Tổ 2</div><div>Tổ 1</div></div>
+                    <div class="board" id="seatingBoard"></div>
+                </div>
+            </div>
+            <button class="submit-answer-btn" id="confirmBtn" onclick="confirmAnswer()">Xác Nhận</button>
+        </div>
+    </div>
+
+    <div class="waiting-screen" id="waitingScreen">
+        <div>
+            <h1>⏳ Đang chờ xác nhận từ admin</h1>
+            <p>Bạn sẽ được chuyển trang tự động khi được duyệt</p>
+            <div class="loading-spinner" style="margin-top: 30px;"></div>
+        </div>
+    </div>
+
+    <div class="quiz-container" id="profileSetup">
+        <div class="quiz-card">
+            <h1 style="font-size: 36px; margin-bottom: 10px; background: linear-gradient(135deg, #07FAA3, #02DC64); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">🎉 Chào mừng!</h1>
+            <p class="subtitle" style="margin-bottom: 30px;">Hãy tạo tài khoản của bạn</p>
+
+            <div class="input-container">
+                <label style="display: block; margin-bottom: 10px; font-weight: 700; color: #07FAA3; font-size: 14px; text-align: left;">Tên hiển thị</label>
+                <input type="text" id="displayName" class="name-input" readonly style="margin-bottom: 20px;">
+            </div>
+
+            <div class="input-container">
+                <label style="display: block; margin-bottom: 10px; font-weight: 700; color: #07FAA3; font-size: 14px; text-align: left;">Ảnh đại diện</label>
+                <input type="file" id="avatarUpload" accept="image/*" style="display: none;">
+                <button class="avatar-upload-btn" onclick="document.getElementById('avatarUpload').click()">
+                    📸 Chọn từ thư viện
+                </button>
+                <button class="avatar-upload-btn" id="autoAssignBtn">
+                    🎲 Tự động chọn 7A7
+                </button>
+                <img id="avatarPreview" class="avatar-preview">
+            </div>
+
+            <div class="input-container">
+                <label style="display: block; margin-bottom: 10px; font-weight: 700; color: #07FAA3; font-size: 14px; text-align: left;">Mật khẩu</label>
+                <input type="password" id="setupPassword" class="name-input" placeholder="Tối thiểu 6 ký tự" minlength="6" style="margin-bottom: 20px;">
+            </div>
+
+            <div class="input-container">
+                <label style="display: block; margin-bottom: 10px; font-weight: 700; color: #07FAA3; font-size: 14px; text-align: left;">Nhập lại mật khẩu</label>
+                <input type="password" id="setupConfirmPassword" class="name-input" placeholder="Nhập lại mật khẩu">
+            </div>
+
+            <button class="submit-answer-btn" id="createAccountBtn" style="margin-top: 30px;">Tạo Tài Khoản</button>
+            <div class="error-message" id="setupError"></div>
+        </div>
+    </div>
+
+    <!-- ADMIN WRAPPER - FIXED LAYOUT -->
+    <div id="adminWrapper">
+        <!-- LOGIN SCREEN -->
+        <div id="loginScreen" class="hero-section">
+            <div class="orb-container">
+                <div class="orb orb-1"></div>
+                <div class="orb orb-2"></div>
+            </div>
+            <div class="content">
+                <h1 class="main-title">🔐 Admin</h1>
+                <input type="email" id="emailInput" class="name-input" placeholder="Email" style="margin-bottom:15px;">
+                <input type="password" id="passwordInput" class="name-input" placeholder="Password" style="margin-bottom:20px;">
+                <button class="submit-answer-btn" id="loginBtn">Đăng nhập</button>
+                <div class="error-message" id="loginError"></div>
+            </div>
+        </div>
+
+        <!-- ADMIN PANEL -->
+        <div id="adminPanel">
+            <h2>📋 Admin Panel</h2>
+            <button onclick="closeAdmin()" class="submit-answer-btn" style="margin-bottom:20px;">
+                Thoát Admin
+            </button>
+            <div id="submissionList">Đang tải...</div>
+        </div>
+    </div>
+</section>
+
+<script>
+    // FIREBASE CONFIG
+    firebase.initializeApp({
+        apiKey: "AIzaSyBx6YfJDocmt-WJQvsaKnaUEA_JohxdfC0",
+        authDomain: "a7-thcsbk.firebaseapp.com",
+        projectId: "a7-thcsbk",
+        storageBucket: "a7-thcsbk.firebasestorage.app",
+        messagingSenderId: "165000167523",
+        appId: "1:165000167523:web:c0d38ab755b699d62e3856"
+    });
+
+    // Activate App Check with reCAPTCHA v3
+firebase.appCheck().activate(
+  new firebase.appCheck.ReCaptchaV3Provider('no'),  // ← this is the SITE KEY
+  true
+);
+
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+    const auth = firebase.auth();
+
+    function normalize(str) {
+        return str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").toLowerCase().replace(/\s+/g, "").trim() : "";
+    }
+
+    function sanitize(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    let unsubscribeListener = null;
+    let currentIdx = 0;
+    let score = 0;
+    let studentName = "";
+    let responses = [];
+    let isSubmitting = false;
+    let selectedAvatarFile = null;
+    let selectedAvatarUrl = null;
+
+    const elements = {
+        welcome: document.getElementById("welcomeContent"),
+        quiz: document.getElementById("quizContainer"),
+        qText: document.getElementById("qText"),
+        qNum: document.getElementById("qNum"),
+        progressBar: document.getElementById("progressBar"),
+        inputArea: document.getElementById("inputArea"),
+        boardArea: document.getElementById("boardArea"),
+        input: document.getElementById("answerInput"),
+        error: document.getElementById("errorMsg"),
+        hint: document.getElementById("hintText"),
+        confirm: document.getElementById("confirmBtn"),
+        board: document.getElementById("seatingBoard")
+    };
+
+    const questions = [
+        { text: "Nhập tên của bạn để xác nhận", type: "name", hint: "Tên đầy đủ của bạn" },
+        { text: "Ngày, tháng, năm sinh?", type: "input", hint: "vd: 01/01/2013 hoặc 1/1/2013" },
+        { text: "Lớp 7A7 có bao nhiêu học sinh?", type: "input", hint: "Số lượng học sinh" },
+        { text: "Cô chủ nhiệm lớp 7A7 là ai?", type: "input", hint: "Tên cô giáo" },
+        { text: "Bạn ngồi chỗ nào?", type: "board", hint: "Chọn vị trí của bạn" }
+    ];
+
+    const classList = [
+        "Nguyễn Hoài An","Phạm Bảo An","Đỗ Bảo Anh","Tạ Hoàng Đức Anh","Đỗ Phan Gia Bảo",
+        "Trương Minh Bảo","Đỗ Công Bắc","Phạm Ngọc Bích","Nguyễn Thị Quỳnh Chi",
+        "Lý Ngọc Diệp","Nguyễn Bùi Hải Đăng","Nguyễn Bắc Đình Đô","Hà Gia Hân",
+        "Nguyễn Ngọc Hạo","Hà Thị Thu Huệ","Nguyễn Trung Phúc Hưng","Phạm Phúc Hưng",
+        "Nguyễn Duy Khang","Dương Mộc Kỳ","Lương Diệu Linh","Nguyễn Diệu Linh",
+        "Nông Trà My","Vũ Thị Minh Ngọc","Đỗ Triệu Anh Nguyệt","Hà Thị Ngọc Nhi",
+        "Trương Yến Nhi","Nguyễn Phúc Nhu","Thân Tâm Như","Hà Duy Phong",
+        "Nguyễn Đăng Phú","Phạm Thu Quỳnh","Đặng Thái Sơn","Tạ Thiện Tâm",
+        "Nông Triệu Minh Thúy","Đàm Hà Trang","Lê Quý Trọng","Nguyễn Văn Trọng",
+        "Nông Vân Tùng","Trần Như Ý", "test1"
+    ];
+
+    const seatMap = {
+        "dangthaison": 1, "nguyentrungphuchung": 1, "phamthuquynh": 5, "nguyenduykhang": 5,
+        "tathientam": 9, "luongdieulinh": 13, "nguyendieulinh": 13, "haduyphong": 17,
+        "nongtramy": 2, "truongminhbao": 2, "nguyenvantrong": 6, "dobaoanh": 6,
+        "nguyenthiquynhchi": 10, "hathithuhue": 10, "truongyennhi": 14, "tahoangducanh": 14,
+        "lyngocdiep": 18, "lequytrong": 18, "phamngocbich": 3, "hathingocnhi": 3,
+        "nguyenbuihaidang": 7, "trannhuy": 7, "nguyendangphu": 11, "nongtrieuminhthuy": 11,
+        "nguyenbacdinhdo": 15, "nguyenhoaian": 15, "hagiahan": 19, "nongvantung": 19,
+        "thantamnhu": 4, "dophangiabao": 4, "nguyenngochao": 8, "damhatrang": 8,
+        "duongmocky": 12, "nguyenphucnhu": 12, "docongbac": 16, "vuthiminhngoc": 16, "dotrieuanhnguyet": 20,
+        "phambaoan": 21, "test1": 21
+    };
+
+    function teacherAnswerOk(val) {
+        const n = normalize(val);
+        return n.includes("hong");
+    }
+
+    function isValidDateDMY(val) {
+        if (!/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(val)) return false;
+        const [d, m, y] = val.split("/").map(Number);
+        if (y < 2012 || y > 2014) return false;
+        if (m < 1 || m > 12) return false;
+        const daysInMonth = new Date(y, m, 0).getDate();
+        return d >= 1 && d <= daysInMonth;
+    }
+
+    document.getElementById("startButton").onclick = () => {
+        elements.welcome.classList.remove("show");
+        elements.welcome.classList.add("hidden");
+        elements.quiz.classList.add("show");
+        loadQuestion();
+    };
+
+    function loadQuestion() {
+        elements.confirm.disabled = false;
+        isSubmitting = false;
+
+        const q = questions[currentIdx];
+        elements.qNum.innerText = `Câu hỏi ${currentIdx+1}/${questions.length}`;
+        elements.qText.innerText = q.text;
+
+        if (q.type === "board") {
+            elements.inputArea.classList.add("hidden");
+            elements.boardArea.classList.remove("hidden");
+            renderBoard();
+            elements.confirm.disabled = true;
+        } else {
+            elements.inputArea.classList.remove("hidden");
+            elements.boardArea.classList.add("hidden");
+            elements.input.value = "";
+            elements.error.classList.remove("show");
+            elements.hint.classList.remove("show");
+            elements.confirm.disabled = false;
+
+            if (q.hint) {
+                elements.hint.innerText = q.hint;
+                elements.hint.classList.add("show");
+            }
+        }
+
+        const progress = ((currentIdx + 1) / questions.length) * 100;
+        elements.progressBar.style.width = progress + "%";
+    }
+
+    function renderBoard() {
+        elements.board.innerHTML = "";
+        for (let i=1; i<=21; i++) {
+            const d = document.createElement("div");
+            d.className = "seat";
+            d.textContent = i;
+            if (i === 21) d.classList.add("seat-21");
+            d.onclick = () => {
+                document.querySelectorAll(".seat").forEach(s=>s.classList.remove("selected"));
+                d.classList.add("selected");
+                elements.confirm.disabled = false;
+                elements.error.classList.remove("show");
+            };
+            elements.board.appendChild(d);
+        }
+    }
+
+    elements.confirm.onclick = () => {
+        if (isSubmitting) return;
+        
+        const q = questions[currentIdx];
+        const val = elements.input.value.trim();
+
+        if (currentIdx === 0 && normalize(val) === "admin") {
+            elements.quiz.classList.remove("show");
+            elements.welcome.classList.add("hidden");
+            document.getElementById("adminWrapper").style.display = "block";
+            return;
+        }
+
+        if (q.type === "name") {
+            if (!val) {
+                elements.error.innerText = "Vui lòng nhập tên!";
+                elements.error.classList.add("show");
+                return;
+            }
+
+            const n = normalize(val);
+            const found = classList.some(name => normalize(name)===n);
+
+            if (found) {
+                studentName = classList.find(name => normalize(name) === n);
+                responses.push(val);
+                score++;
+                next();
+            } else {
+                elements.error.innerText = "Tên không có trong danh sách lớp 7A7!";
+                elements.error.classList.add("show");
+            }
+        }
+
+        else if (q.type === "input") {
+            if (!val) {
+                elements.error.innerText = "Vui lòng nhập câu trả lời!";
+                elements.error.classList.add("show");
+                return;
+            }
+
+            if (currentIdx === 1) {
+                if (!isValidDateDMY(val)) {
+                    elements.error.innerText = "Ngày sinh không hợp lệ";
+                    elements.error.classList.add("show");
+                    return;
+                }
+                score++;
+            }
+
+            responses.push(val);
+            if (currentIdx === 2 && val === String(classList.length)) score++;
+            if (currentIdx === 3 && teacherAnswerOk(val)) score++;
+            next();
+        }
+
+        if (q.type === "board") {
+        const sel = document.querySelector(".seat.selected");
+        if (!sel) {
+            elements.error.innerText = "Vui lòng chọn chỗ ngồi trước!";
+            elements.error.classList.add("show");
+            return;
+            }
+            const idx = [...elements.board.children].indexOf(sel)+1;
+            responses.push(`Chỗ ${idx}`);
+            if (seatMap[normalize(studentName)] === idx) score++;
+            next();
+        }
+    };
+    
+function saveSubmission() {
+    if (!studentName || responses.length !== 5) return Promise.resolve();
+
+    const nameKey = normalize(studentName);
+
+    return db.collection("submissions")
+        .doc(nameKey)
+        .set({
+            name: sanitize(studentName),
+            nameKey: nameKey,
+            answers: responses.map(r => sanitize(r)),
+            score: `${score}/5`,
+            verified: false,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: false });
+}
+
+function finish() {
+    if (isSubmitting) return;
+    isSubmitting = true;
+    
+    console.log("🔍 Starting finish()...");
+    console.log("studentName:", studentName);
+    console.log("responses:", responses);
+    
+    elements.confirm.disabled = true;
+    elements.confirm.innerHTML = '<span class="loading-spinner"></span> Đang gửi...';
+
+    saveSubmission()
+        .then(() => {
+            console.log("✅ Save successful!");
+            localStorage.setItem("studentName", studentName);
+            localStorage.setItem("submitted", "true");
+
+            console.log("🔄 Hiding quiz, showing waiting screen...");
+            elements.quiz.classList.remove("show");
+            elements.progressBar.style.width = "100%";
+            
+            const waitingScreen = document.getElementById("waitingScreen");
+            console.log("waitingScreen element:", waitingScreen);
+            waitingScreen.classList.add("show");
+
+            startVerificationListener();
+        })
+        .catch(error => {
+    console.error("❌ Save failed:", error);
+    isSubmitting = false;
+    elements.confirm.disabled = false;
+    elements.confirm.innerHTML = 'Xác Nhận';
+
+    // Show error on screen
+    elements.error.innerText = "Lỗi khi gửi bài: " + (error.message || "Không xác định");
+    elements.error.classList.add("show");
+
+    // Force show error area
+    elements.inputArea.classList.remove("hidden");
+});
+}
+
+    function next() {
+        currentIdx++;
+        if (currentIdx < questions.length) loadQuestion();
+        else finish();
+    }
+
+    function startVerificationListener() {
+        if (unsubscribeListener) {
+            unsubscribeListener();
+        }
+
+        const savedName = localStorage.getItem("studentName");
+        if (!savedName) return;
+
+        const nameKey = normalize(savedName);
+
+        unsubscribeListener = db.collection("submissions")
+            .doc(nameKey)
+            .onSnapshot(doc => {
+                if (!doc.exists) {
+                    console.log("Deleted, reset");
+                    localStorage.clear();
+                    window.location.reload();
+                    return;
+                }
+
+                const data = doc.data();
+
+                if (data.verified === true) {
+                    if (unsubscribeListener) unsubscribeListener();
+                    localStorage.setItem("verified", "true");
+                    document.getElementById("waitingScreen").classList.remove("show");
+                    document.getElementById("profileSetup").classList.add("show");
+                    document.getElementById("displayName").value = studentName;
+                }
+            });
+    }
+
+    // PROFILE SETUP
+    const defaultAvatars = [
+        'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%2307FAA3" width="100" height="100"/><text x="50" y="50" font-size="35" text-anchor="middle" dy=".3em" fill="white" font-family="Arial" font-weight="bold">7A7</text></svg>',
+        'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%2302DC64"/><text x="50" y="50" font-size="30" text-anchor="middle" dy=".3em" fill="white" font-family="Arial" font-weight="bold">7A7</text></svg>',
+        'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%234ECDC4" width="100" height="100"/><text x="50" y="50" font-size="30" text-anchor="middle" dy=".3em" fill="white" font-family="Arial" font-weight="bold">7A7</text></svg>'
+    ];
+
+    document.getElementById('autoAssignBtn').onclick = () => {
+        selectedAvatarUrl = defaultAvatars[Math.floor(Math.random() * defaultAvatars.length)];
+        selectedAvatarFile = null;
+        
+        const preview = document.getElementById('avatarPreview');
+        preview.src = selectedAvatarUrl;
+        preview.classList.add('show');
+    };
+
+    document.getElementById('avatarUpload').onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Ảnh quá lớn! Max 5MB');
+                return;
+            }
+
+            selectedAvatarFile = file;
+            selectedAvatarUrl = null;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const preview = document.getElementById('avatarPreview');
+                preview.src = e.target.result;
+                preview.classList.add('show');
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+document.getElementById('createAccountBtn').onclick = async () => {
+    const password = document.getElementById('setupPassword').value;
+    const confirmPassword = document.getElementById('setupConfirmPassword').value;
+    const errorMsg = document.getElementById('setupError');
+    const btn = document.getElementById('createAccountBtn');
+
+    errorMsg.classList.remove('show');
+    errorMsg.textContent = '';
+
+    if (!studentName) {
+        errorMsg.textContent = 'Lỗi: Tên học sinh không hợp lệ';
+        errorMsg.classList.add('show');
+        return;
+    }
+
+    if (!password || password.length < 6) {
+        errorMsg.textContent = 'Mật khẩu phải ít nhất 6 ký tự!';
+        errorMsg.classList.add('show');
+        return;
+    }
+
+    if (password !== confirmPassword) {
+        errorMsg.textContent = 'Mật khẩu không khớp!';
+        errorMsg.classList.add('show');
+        return;
+    }
+
+    if (!selectedAvatarUrl && !selectedAvatarFile) {
+        errorMsg.textContent = 'Chọn ảnh đại diện!';
+        errorMsg.classList.add('show');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner"></span> Đang tạo...';
+
+    try {
+        const email = normalize(studentName) + "_" + Date.now() + "@7a7.local";
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+
+        let avatarUrl = selectedAvatarUrl;
+
+        if (selectedAvatarFile) {
+            const ref = storage.ref().child(`avatars/${user.uid}`);
+            await ref.put(selectedAvatarFile);
+            avatarUrl = await ref.getDownloadURL();
+        }
+
+        await db.collection('users').doc(user.uid).set({
+            name: studentName,
+            email: email,
+            avatar: avatarUrl || '',
+            coins: 0,
+            role: 'member',
+            status: 'online',
+            showOnline: true,
+            isBanned: false,
+            isMuted: false,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        localStorage.clear();
+        alert('✅ Tạo thành công! Đăng nhập để vào main');
+        window.location.href = 'main.html';  // or whatever your next page is
+
+    } catch (error) {
+        console.error('Tạo tài khoản lỗi:', error);
+
+        let msg = 'Lỗi không xác định. Vui lòng thử lại.';
+        if (error.code === 'auth/email-already-in-use') msg = 'Email này đã được sử dụng.';
+        if (error.code === 'auth/invalid-email') msg = 'Email không hợp lệ.';
+        if (error.code === 'auth/weak-password') msg = 'Mật khẩu quá yếu.';
+        if (error.code === 'auth/network-request-failed') msg = 'Kết nối mạng lỗi, kiểm tra internet.';
+
+        errorMsg.textContent = msg;
+        errorMsg.classList.add('show');
+
+        btn.disabled = false;
+        btn.innerHTML = 'Tạo Tài Khoản';
+    }
+};
+
+    // INIT ON PAGE LOAD
+    window.addEventListener('DOMContentLoaded', () => {
+        const savedName = localStorage.getItem("studentName");
+        const submitted = localStorage.getItem("submitted") === "true";
+        const verified = localStorage.getItem("verified") === "true";
+
+        if (verified) {
+            elements.welcome.classList.remove("show");
+            elements.welcome.classList.add("hidden");
+            document.getElementById("profileSetup").classList.add("show");
+            document.getElementById("displayName").value = savedName || "";
+            return;
+        }
+
+        if (savedName && submitted) {
+            studentName = savedName;
+            elements.welcome.classList.remove("show");
+            elements.welcome.classList.add("hidden");
+            document.getElementById("waitingScreen").classList.add("show");
+            startVerificationListener();
+            return;
+        }
+
+        elements.welcome.classList.add("show");
+    });
+
+    // ===== ADMIN SYSTEM =====
+    const ADMIN_EMAIL = "tamtt.jps@gmail.com";
+
+    document.getElementById("loginBtn").onclick = () => {
+        const email = document.getElementById("emailInput").value.trim();
+        const password = document.getElementById("passwordInput").value;
+        const error = document.getElementById("loginError");
+
+        auth.signInWithEmailAndPassword(email, password)
+            .then(userCred => {
+                const user = userCred.user;
+
+                if (user.email !== ADMIN_EMAIL) {
+                    auth.signOut();
+                    throw new Error("Not admin");
+                }
+
+                document.getElementById("loginScreen").style.display = "none";
+                document.getElementById("adminPanel").style.display = "block";
+                loadSubmissions();
+            })
+            .catch(() => {
+                error.innerText = "Sai email hoặc không phải admin";
+                error.classList.add("show");
+            });
+    };
+
+    function loadSubmissions() {
+        const list = document.getElementById("submissionList");
+        list.innerHTML = "Đang tải...";
+
+        db.collection("submissions")
+            .orderBy("createdAt", "desc")
+            .get()
+            .then(snap => {
+                let html = "";
+                snap.forEach(doc => {
+                    const s = doc.data();
+                    html += `
+                        <div class="submission-card">
+                            <b>${s.name}</b> — ${s.score}<br>
+                            Trạng thái: ${s.verified ? "✅ Đã duyệt" : "⏳ Chờ duyệt"}<br>
+                            ${!s.verified ? `
+                                <button onclick="verifySubmission('${doc.id}', true)">Duyệt</button>
+                                <button onclick="verifySubmission('${doc.id}', false)">Từ chối</button>
+                            ` : ''}
+                        </div>
+                    `;
+                });
+                list.innerHTML = html || "Chưa có bài nộp nào";
+            })
+            .catch(err => {
+                console.error(err);
+                if (err.code === 'permission-denied') {
+                    list.innerHTML = "🚫 Bạn không có quyền xem danh sách bài nộp";
+                } else {
+                    list.innerHTML = "Lỗi: " + err.message;
+                }
+            });
+    }
+
+    window.verifySubmission = function(docId, approved) {
+        if (!confirm(approved ? "Duyệt học sinh này?" : "Từ chối thật chứ?")) return;
+        
+        db.collection("submissions").doc(docId).update({
+            verified: approved,
+            verifiedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            verifiedBy: auth.currentUser.email || "admin"
+        })
+        .then(() => {
+            alert("Đã cập nhật!");
+            loadSubmissions();
+        })
+        .catch(err => alert("Lỗi: " + err.message));
+    };
+
+    function closeAdmin() {
+        auth.signOut();
+        document.getElementById("adminWrapper").style.display = "none";
+        document.getElementById("loginScreen").style.display = "flex";
+        document.getElementById("adminPanel").style.display = "none";
+        document.getElementById("emailInput").value = "";
+        document.getElementById("passwordInput").value = "";
+        elements.welcome.classList.remove("hidden");
+        elements.welcome.classList.add("show");
+    }
+
+</script>
+</body>
+</html>
